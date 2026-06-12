@@ -10,11 +10,22 @@
   <div class="container">
     <h1>🧮 KeToan Helper</h1>
     
-    <!-- VAT Calculator -->
-    <section class="section">
+    <!-- Tabs Navigation -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="vat">VAT</button>
+      <button class="tab-btn" data-tab="number">Đọc số</button>
+      <button class="tab-btn" data-tab="mst">MST</button>
+      <button class="tab-btn" data-tab="tax">Thuế TNCN</button>
+      <button class="tab-btn" data-tab="depreciation">Khấu hao</button>
+      <button class="tab-btn" data-tab="exchange">Tỷ giá</button>
+      <button class="tab-btn" data-tab="clipboard">Clipboard</button>
+    </div>
+
+    <!-- VAT Calculator Tab -->
+    <section class="tab-content active" id="vat-tab">
       <h2>Tính VAT</h2>
       <div class="input-group">
-        <input type="text" id="amount" placeholder="Nhập số tiền" />
+        <input type="text" id="vat-amount" placeholder="Nhập số tiền" />
         <select id="vat-type">
           <option value="add-8">+ VAT 8%</option>
           <option value="add-10">+ VAT 10%</option>
@@ -24,14 +35,14 @@
       </div>
       <div class="result" id="vat-result">
         <div><strong>Tiền hàng:</strong> <span id="base-amount">0</span> đ</div>
-        <div><strong>Thuế VAT:</strong> <span id="vat-amount">0</span> đ</div>
+        <div><strong>Thuế VAT:</strong> <span id="vat-amount-display">0</span> đ</div>
         <div><strong>Tổng tiền:</strong> <span id="total-amount">0</span> đ</div>
       </div>
       <button id="copy-vat">📋 Copy kết quả</button>
     </section>
 
-    <!-- Number to Text -->
-    <section class="section">
+    <!-- Number to Text Tab -->
+    <section class="tab-content" id="number-tab">
       <h2>Đọc số tiền</h2>
       <div class="input-group">
         <input type="text" id="number-input" placeholder="Nhập số tiền" />
@@ -41,20 +52,129 @@
       <button id="copy-text" style="display: none;">📋 Copy</button>
     </section>
 
-    <!-- Multi-Clipboard -->
-    <section class="section">
+    <!-- MST Lookup Tab -->
+    <section class="tab-content" id="mst-tab">
+      <h2>Tra cứu MST</h2>
+      <div class="input-group">
+        <input type="text" id="mst-input" placeholder="Nhập mã số thuế" maxlength="13" />
+        <button id="lookup-mst">🔍 Tra cứu</button>
+      </div>
+      <div id="mst-result" class="result"></div>
+      <button id="copy-mst" style="display: none;">📋 Copy thông tin</button>
+    </section>
+
+    <!-- Tax Calculator Tab -->
+    <section class="tab-content" id="tax-tab">
+      <h2>Tính thuế TNCN</h2>
+      <div class="form-group">
+        <label>Lương Gross (đ/tháng):</label>
+        <input type="text" id="tax-salary" placeholder="VD: 20000000" />
+      </div>
+      <div class="form-group">
+        <label>Số người phụ thuộc:</label>
+        <input type="number" id="tax-dependents" value="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Bảo hiểm (đ) - để trống = tự tính 10.5%:</label>
+        <input type="text" id="tax-insurance" placeholder="Tự động tính" />
+      </div>
+      <div class="form-group">
+        <label>Giảm trừ khác (đ):</label>
+        <input type="text" id="tax-other" placeholder="0" value="0" />
+      </div>
+      <button id="calculate-tax">💰 Tính thuế</button>
+      <div id="tax-result" class="result"></div>
+      <button id="copy-tax" style="display: none;">📋 Copy kết quả</button>
+    </section>
+
+    <!-- Depreciation Tab -->
+    <section class="tab-content" id="depreciation-tab">
+      <h2>Khấu hao TSCĐ</h2>
+      <div class="form-group">
+        <label>Nguyên giá (đ):</label>
+        <input type="text" id="dep-cost" placeholder="VD: 100000000" />
+      </div>
+      <div class="form-group">
+        <label>Thời gian sử dụng (năm):</label>
+        <input type="number" id="dep-life" value="5" min="1" max="50" />
+      </div>
+      <div class="form-group">
+        <label>Phương pháp:</label>
+        <select id="dep-method">
+          <option value="straight">Đường thẳng</option>
+          <option value="declining">Số dư giảm dần</option>
+        </select>
+      </div>
+      <div class="form-group" id="residual-group">
+        <label>Giá trị thu hồi (đ):</label>
+        <input type="text" id="dep-residual" placeholder="0" value="0" />
+      </div>
+      <button id="calculate-dep">📊 Tính khấu hao</button>
+      <div id="dep-result" class="result"></div>
+      <button id="copy-dep" style="display: none;">📋 Copy kết quả</button>
+    </section>
+
+    <!-- Exchange Rate Tab -->
+    <section class="tab-content" id="exchange-tab">
+      <h2>Tỷ giá ngoại tệ</h2>
+      <div class="form-group">
+        <label>Ngân hàng:</label>
+        <select id="exchange-bank">
+          <option value="vcb">Vietcombank</option>
+          <option value="bidv">BIDV</option>
+          <option value="vietinbank">Vietinbank</option>
+          <option value="techcombank">Techcombank</option>
+          <option value="sbv">Ngân hàng Nhà nước</option>
+        </select>
+      </div>
+      <button id="fetch-rates">💱 Lấy tỷ giá</button>
+      <div id="exchange-result" class="result"></div>
+      
+      <hr style="margin: 16px 0;">
+      
+      <h3>Quy đổi tiền tệ</h3>
+      <div class="form-group">
+        <label>Số tiền:</label>
+        <input type="text" id="convert-amount" placeholder="Nhập số tiền" />
+      </div>
+      <div class="form-group">
+        <label>Từ:</label>
+        <select id="convert-from">
+          <option value="VND">VND</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="JPY">JPY</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sang:</label>
+        <select id="convert-to">
+          <option value="USD">USD</option>
+          <option value="VND">VND</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="JPY">JPY</option>
+        </select>
+      </div>
+      <button id="convert-currency">🔄 Quy đổi</button>
+      <div id="convert-result" class="result"></div>
+    </section>
+
+    <!-- Multi-Clipboard Tab -->
+    <section class="tab-content" id="clipboard-tab">
       <h2>Clipboard</h2>
       <div class="tabs">
         <button class="tab active" data-tab="saved">Dữ liệu cố định</button>
         <button class="tab" data-tab="history">Lịch sử</button>
       </div>
       
-      <div id="saved-tab" class="tab-content active">
+      <div id="saved-tab-content" class="clipboard-content active">
         <div id="saved-list"></div>
         <button id="add-saved">+ Thêm mới</button>
       </div>
       
-      <div id="history-tab" class="tab-content">
+      <div id="history-tab-content" class="clipboard-content">
         <div id="history-list"></div>
         <button id="clear-history">🗑️ Xóa lịch sử</button>
       </div>
@@ -64,13 +184,22 @@
     <section class="section shortcuts">
       <h3>⌨️ Phím tắt</h3>
       <ul>
-        <li><kbd>Ctrl+Shift+C</kbd> - Mở VAT Calculator</li>
-        <li><kbd>Ctrl+Shift+T</kbd> - Đọc số tiền (bôi đen số)</li>
-        <li><kbd>Ctrl+Shift+V</kbd> - Mở Clipboard</li>
+        <li><kbd>Ctrl+Shift+C</kbd> - Mở extension</li>
+        <li><kbd>Ctrl+Shift+T</kbd> - Đọc số (bôi đen)</li>
+        <li><kbd>Ctrl+Shift+8</kbd> - VAT 8% (bôi đen)</li>
+        <li><kbd>Ctrl+Shift+1</kbd> - VAT 10% (bôi đen)</li>
       </ul>
     </section>
   </div>
 
+  <!-- Load features -->
+  <script src="features/tax-calculator.js"></script>
+  <script src="features/mst-lookup.js"></script>
+  <script src="features/invoice-validator.js"></script>
+  <script src="features/exchange-rate.js"></script>
+  <script src="features/depreciation.js"></script>
+  
+  <!-- Load popup logic -->
   <script src="popup.js"></script>
 </body>
 </html>
