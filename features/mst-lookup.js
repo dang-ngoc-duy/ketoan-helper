@@ -29,8 +29,10 @@ async function lookupMST(taxCode) {
     const response = await fetch(`${MST_API}/${validation.cleaned}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      mode: 'cors'
     });
 
     if (!response.ok) {

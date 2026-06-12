@@ -31,7 +31,12 @@ async function fetchExchangeRates(bank = 'vcb') {
   }
 
   try {
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/json'
+      },
+      mode: 'cors'
+    });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
