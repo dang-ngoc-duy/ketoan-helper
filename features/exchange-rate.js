@@ -1,67 +1,71 @@
 // Exchange Rate Service (Tỷ giá ngoại tệ)
-// API: VNAppMob (free, no auth required)
+// API: Vietcombank XML (free, no auth required)
 
-const EXCHANGE_RATE_APIS = {
-  vcb: 'https://api.vnappmob.com/api/v2/exchange_rate/vcb',
-  bidv: 'https://api.vnappmob.com/api/v2/exchange_rate/bid',
-  vietinbank: 'https://api.vnappmob.com/api/v2/exchange_rate/ctg',
-  techcombank: 'https://api.vnappmob.com/api/v2/exchange_rate/tcb',
-  sbv: 'https://api.vnappmob.com/api/v2/exchange_rate/sbv' // Ngân hàng Nhà nước
-};
+const VIETCOMBANK_XML_URL = 'https://portal.vietcombank.com.vn/Usercontrols/TVPortal.TyGia/pXML.aspx?b=10';
 
 const BANK_NAMES = {
-  vcb: 'Vietcombank',
-  bidv: 'BIDV',
-  vietinbank: 'Vietinbank',
-  techcombank: 'Techcombank',
-  sbv: 'Ngân hàng Nhà nước'
+  vcb: 'Vietcombank'
 };
 
 // Common currency codes
 const COMMON_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'SGD', 'THB', 'CNY', 'KRW', 'HKD'];
 
 /**
- * Fetch exchange rates from bank
- * @param {string} bank - Bank code (vcb, bidv, vietinbank, techcombank, sbv)
+ * Parse Vietcombank XML to JSON
+ */
+function parseVietcombankXML(xmlText) {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+  
+  const rates = [];
+  const exrateNodes = xmlDoc.getElementsByTagName('Exrate');
+  
+  for (let i = 0; i < exrateNodes.length; i++) {
+    const node = exrateNodes[i];
+    const currencyCode = node.getAttribute('CurrencyCode');
+    const currencyName = node.getAttribute('CurrencyName');
+    const buy = parseFloat(node.getAttribute('Buy')) || 0;
+    const transfer = parseFloat(node.getAttribute('Transfer')) || 0;
+    const sell = parseFloat(node.getAttribute('Sell')) || 0;
+    
+    if (currencyCode && (buy > 0 || transfer > 0 || sell > 0)) {
+      rates.push({
+        currency: currencyCode,
+        currencyName: currencyName || currencyCode,
+        buyCash: buy,
+        buyTransfer: transfer,
+        sell: sell
+      });
+    }
+  }
+  
+  return rates;
+}
+
+/**
+ * Fetch exchange rates from Vietcombank
  */
 async function fetchExchangeRates(bank = 'vcb') {
-  const apiUrl = EXCHANGE_RATE_APIS[bank];
-  if (!apiUrl) {
-    return { success: false, error: 'Bank không hợp lệ' };
-  }
-
   try {
-    const response = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/json'
-      },
-      mode: 'cors'
-    });
+    const response = await fetch(VIETCOMBANK_XML_URL);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const data = await response.json();
+    const xmlText = await response.text();
+    const rates = parseVietcombankXML(xmlText);
     
-    if (data.results && Array.isArray(data.results)) {
-      const rates = data.results.map(item => ({
-        currency: item.currency_code,
-        currencyName: item.currency_name,
-        buyCash: parseFloat(item.buy_cash) || 0,
-        buyTransfer: parseFloat(item.buy_transfer) || 0,
-        sell: parseFloat(item.sell) || 0
-      })).filter(r => r.buyCash > 0 || r.buyTransfer > 0 || r.sell > 0);
-
-      return {
-        success: true,
-        bank: BANK_NAMES[bank],
-        bankCode: bank,
-        updatedAt: new Date().toLocaleString('vi-VN'),
-        rates
-      };
+    if (rates.length === 0) {
+      return { success: false, error: 'Không có dữ liệu tỷ giá' };
     }
 
-    return { success: false, error: 'Dữ liệu không hợp lệ' };
+    return {
+      success: true,
+      bank: BANK_NAMES.vcb,
+      bankCode: 'vcb',
+      updatedAt: new Date().toLocaleString('vi-VN'),
+      rates
+    };
   } catch (error) {
     return { success: false, error: 'Lỗi kết nối: ' + error.message };
   }
@@ -92,6 +96,8 @@ function convertCurrency(amount, fromCurrency, toCurrency, rates, rateType = 'se
                     : rateType === 'buy_transfer' ? rate.buyTransfer 
                     : rate.sell;
     
+    if (rateValue === 0) return { success: false, error: `Tỷ giá ${toUpper} không khả dụng` };
+    
     return {
       success: true,
       result: amount / rateValue,
@@ -109,6 +115,8 @@ function convertCurrency(amount, fromCurrency, toCurrency, rates, rateType = 'se
                     : rateType === 'buy_transfer' ? rate.buyTransfer 
                     : rate.sell;
     
+    if (rateValue === 0) return { success: false, error: `Tỷ giá ${fromUpper} không khả dụng` };
+    
     return {
       success: true,
       result: amount * rateValue,
@@ -123,6 +131,10 @@ function convertCurrency(amount, fromCurrency, toCurrency, rates, rateType = 'se
   
   if (!fromRate) return { success: false, error: `Không tìm thấy tỷ giá ${fromUpper}` };
   if (!toRate) return { success: false, error: `Không tìm thấy tỷ giá ${toUpper}` };
+
+  if (fromRate.sell === 0 || toRate.sell === 0) {
+    return { success: false, error: 'Tỷ giá không khả dụng' };
+  }
 
   const vndAmount = amount * fromRate.sell;
   const result = vndAmount / toRate.sell;
@@ -183,7 +195,6 @@ function formatExchangeRates(data, filter = COMMON_CURRENCIES) {
 // Export
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    EXCHANGE_RATE_APIS,
     BANK_NAMES,
     COMMON_CURRENCIES,
     fetchExchangeRates,
