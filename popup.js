@@ -383,3 +383,120 @@ function flashButton(btn, successText, originalText) {
 // ===== INITIALIZE =====
 loadSavedItems();
 loadHistory();
+
+// ===== SALARY CONVERTER =====
+const salaryTypeSelect = document.getElementById('salary-type');
+const salaryLabel = document.getElementById('salary-label');
+const salaryInput = document.getElementById('salary-input');
+const salaryDependents = document.getElementById('salary-dependents');
+const calcSalaryBtn = document.getElementById('calculate-salary');
+const salaryResult = document.getElementById('salary-result');
+const copySalaryBtn = document.getElementById('copy-salary');
+let currentSalaryResult = null;
+
+salaryTypeSelect.addEventListener('change', () => {
+  salaryLabel.textContent = salaryTypeSelect.value === 'gross-to-net' 
+    ? 'Lương Gross (đ/tháng):' 
+    : 'Lương Net (đ/tháng):';
+});
+
+calcSalaryBtn.addEventListener('click', () => {
+  const amount = parseAmount(salaryInput.value);
+  const dependents = parseInt(salaryDependents.value) || 0;
+  const type = salaryTypeSelect.value;
+
+  if (amount <= 0) {
+    salaryResult.innerHTML = '<div class="error">Vui lòng nhập số tiền</div>';
+    return;
+  }
+
+  if (type === 'gross-to-net') {
+    currentSalaryResult = grossToNet(amount, dependents, 0);
+  } else {
+    currentSalaryResult = netToGross(amount, dependents, 0);
+  }
+
+  salaryResult.innerHTML = formatSalaryResult(currentSalaryResult);
+  copySalaryBtn.style.display = 'block';
+});
+
+copySalaryBtn.addEventListener('click', () => {
+  if (currentSalaryResult) {
+    const fmt = (n) => Math.round(n).toLocaleString('vi-VN');
+    const text = `Lương GROSS: ${fmt(currentSalaryResult.grossSalary)} đ\nBảo hiểm: -${fmt(currentSalaryResult.insurance.total)} đ\nThuế TNCN: -${fmt(currentSalaryResult.tax)} đ\nLương NET: ${fmt(currentSalaryResult.netSalary)} đ`;
+    navigator.clipboard.writeText(text);
+    flashButton(copySalaryBtn, '✓ Đã copy!', '📋 Copy kết quả');
+  }
+});
+
+// ===== CCCD VALIDATOR =====
+const cccdInput = document.getElementById('cccd-input');
+const checkCccdBtn = document.getElementById('check-cccd');
+const cccdResult = document.getElementById('cccd-result');
+
+checkCccdBtn.addEventListener('click', () => {
+  const cccd = cccdInput.value.trim();
+  if (!cccd) {
+    cccdResult.innerHTML = '<div class="error">Vui lòng nhập CCCD</div>';
+    return;
+  }
+
+  const info = parseCCCD(cccd);
+  cccdResult.innerHTML = formatCCCDInfo(info);
+});
+
+// ===== DATE CALCULATOR =====
+const dateFromInput = document.getElementById('date-from');
+const dateToInput = document.getElementById('date-to');
+const calcDateBtn = document.getElementById('calculate-date');
+const dateResult = document.getElementById('date-result');
+
+calcDateBtn.addEventListener('click', () => {
+  const from = parseDate(dateFromInput.value);
+  const to = parseDate(dateToInput.value);
+
+  if (!from || !to) {
+    dateResult.innerHTML = '<div class="error">Vui lòng nhập đúng định dạng DD/MM/YYYY</div>';
+    return;
+  }
+
+  const diff = formatDateDiff(from, to);
+  dateResult.innerHTML = `
+    <div class="date-diff">
+      <div class="info-row"><strong>Tổng số ngày:</strong> ${diff.totalDays} ngày</div>
+      <div class="info-row"><strong>Ngày làm việc:</strong> ${diff.workDays} ngày</div>
+      <div class="info-row"><strong>Tuần:</strong> ${diff.weeks} tuần ${diff.remainingDays} ngày</div>
+      <div class="info-row"><strong>Tháng (xấp xỉ):</strong> ${diff.months} tháng</div>
+      ${diff.years >= 1 ? `<div class="info-row"><strong>Năm (xấp xỉ):</strong> ${diff.years} năm</div>` : ''}
+    </div>`;
+});
+
+// ===== TAX DEADLINE =====
+const taxPeriodInput = document.getElementById('tax-period');
+const calcDeadlineBtn = document.getElementById('calculate-deadline');
+const deadlineResult = document.getElementById('deadline-result');
+
+calcDeadlineBtn.addEventListener('click', () => {
+  const period = taxPeriodInput.value.trim();
+  if (!period) {
+    deadlineResult.innerHTML = '<div class="error">Vui lòng nhập kỳ kê khai</div>';
+    return;
+  }
+
+  // Detect format: MM/YYYY or Q1/YYYY
+  let deadline;
+  if (/^Q[1-4]\/\d{4}$/.test(period)) {
+    // Quarterly
+    deadline = vatDeclarationDeadline('01/' + period.replace('Q', ''), 'quarterly');
+  } else {
+    // Monthly
+    deadline = vatDeclarationDeadline(period, 'monthly');
+  }
+
+  deadlineResult.innerHTML = `
+    <div class="deadline-info">
+      <div class="info-row"><strong>Kỳ kê khai:</strong> ${period}</div>
+      <div class="info-row highlight"><strong>Hạn nộp tờ khai:</strong> ${formatDate(deadline)}</div>
+      <div class="info-row"><strong>Số ngày còn lại:</strong> ${daysBetween(new Date(), deadline)} ngày</div>
+    </div>`;
+});

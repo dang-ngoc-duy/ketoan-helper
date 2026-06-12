@@ -15,10 +15,12 @@
       <button class="tab-btn active" data-tab="vat">VAT</button>
       <button class="tab-btn" data-tab="number">Đọc số</button>
       <button class="tab-btn" data-tab="mst">MST</button>
-      <button class="tab-btn" data-tab="tax">Thuế TNCN</button>
+      <button class="tab-btn" data-tab="salary">Lương</button>
       <button class="tab-btn" data-tab="depreciation">Khấu hao</button>
       <button class="tab-btn" data-tab="exchange">Tỷ giá</button>
-      <button class="tab-btn" data-tab="clipboard">Clipboard</button>
+      <button class="tab-btn" data-tab="cccd">CCCD</button>
+      <button class="tab-btn" data-tab="date">Ngày</button>
+      <button class="tab-btn" data-tab="clipboard">📋</button>
     </div>
 
     <!-- VAT Calculator Tab -->
@@ -63,28 +65,27 @@
       <button id="copy-mst" style="display: none;">📋 Copy thông tin</button>
     </section>
 
-    <!-- Tax Calculator Tab -->
-    <section class="tab-content" id="tax-tab">
-      <h2>Tính thuế TNCN</h2>
+    <!-- Salary Converter Tab (NEW) -->
+    <section class="tab-content" id="salary-tab">
+      <h2>Quy đổi lương Gross ↔ Net</h2>
       <div class="form-group">
-        <label>Lương Gross (đ/tháng):</label>
-        <input type="text" id="tax-salary" placeholder="VD: 20000000" />
+        <label>Loại quy đổi:</label>
+        <select id="salary-type">
+          <option value="gross-to-net">Gross → Net</option>
+          <option value="net-to-gross">Net → Gross</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label id="salary-label">Lương Gross (đ/tháng):</label>
+        <input type="text" id="salary-input" placeholder="VD: 30000000" />
       </div>
       <div class="form-group">
         <label>Số người phụ thuộc:</label>
-        <input type="number" id="tax-dependents" value="0" min="0" />
+        <input type="number" id="salary-dependents" value="0" min="0" />
       </div>
-      <div class="form-group">
-        <label>Bảo hiểm (đ) - để trống = tự tính 10.5%:</label>
-        <input type="text" id="tax-insurance" placeholder="Tự động tính" />
-      </div>
-      <div class="form-group">
-        <label>Giảm trừ khác (đ):</label>
-        <input type="text" id="tax-other" placeholder="0" value="0" />
-      </div>
-      <button id="calculate-tax">💰 Tính thuế</button>
-      <div id="tax-result" class="result"></div>
-      <button id="copy-tax" style="display: none;">📋 Copy kết quả</button>
+      <button id="calculate-salary">💰 Tính lương</button>
+      <div id="salary-result" class="result"></div>
+      <button id="copy-salary" style="display: none;">📋 Copy kết quả</button>
     </section>
 
     <!-- Depreciation Tab -->
@@ -116,13 +117,7 @@
 
     <!-- Exchange Rate Tab -->
     <section class="tab-content" id="exchange-tab">
-      <h2>Tỷ giá ngoại tệ</h2>
-      <div class="form-group">
-        <label>Ngân hàng:</label>
-        <select id="exchange-bank">
-          <option value="vcb">Vietcombank</option>
-        </select>
-      </div>
+      <h2>Tỷ giá Vietcombank</h2>
       <button id="fetch-rates">💱 Lấy tỷ giá</button>
       <div id="exchange-result" class="result"></div>
       
@@ -133,8 +128,7 @@
         <label>Số tiền:</label>
         <input type="text" id="convert-amount" placeholder="Nhập số tiền" />
       </div>
-      <div class="form-group">
-        <label>Từ:</label>
+      <div class="input-group">
         <select id="convert-from">
           <option value="VND">VND</option>
           <option value="USD">USD</option>
@@ -142,9 +136,7 @@
           <option value="GBP">GBP</option>
           <option value="JPY">JPY</option>
         </select>
-      </div>
-      <div class="form-group">
-        <label>Sang:</label>
+        <span style="padding: 8px;">→</span>
         <select id="convert-to">
           <option value="USD">USD</option>
           <option value="VND">VND</option>
@@ -155,6 +147,41 @@
       </div>
       <button id="convert-currency">🔄 Quy đổi</button>
       <div id="convert-result" class="result"></div>
+    </section>
+
+    <!-- CCCD Validator Tab (NEW) -->
+    <section class="tab-content" id="cccd-tab">
+      <h2>Kiểm tra CCCD</h2>
+      <div class="input-group">
+        <input type="text" id="cccd-input" placeholder="Nhập 12 số CCCD" maxlength="12" />
+        <button id="check-cccd">🔍 Kiểm tra</button>
+      </div>
+      <div id="cccd-result" class="result"></div>
+    </section>
+
+    <!-- Date Calculator Tab (NEW) -->
+    <section class="tab-content" id="date-tab">
+      <h2>Tính ngày</h2>
+      <div class="form-group">
+        <label>Từ ngày (DD/MM/YYYY):</label>
+        <input type="text" id="date-from" placeholder="01/01/2026" />
+      </div>
+      <div class="form-group">
+        <label>Đến ngày (DD/MM/YYYY):</label>
+        <input type="text" id="date-to" placeholder="31/12/2026" />
+      </div>
+      <button id="calculate-date">📅 Tính khoảng cách</button>
+      <div id="date-result" class="result"></div>
+      
+      <hr style="margin: 16px 0;">
+      
+      <h3>Hạn nộp thuế</h3>
+      <div class="form-group">
+        <label>Kỳ kê khai:</label>
+        <input type="text" id="tax-period" placeholder="01/2026 hoặc Q1/2026" />
+      </div>
+      <button id="calculate-deadline">⏰ Xem hạn nộp</button>
+      <div id="deadline-result" class="result"></div>
     </section>
 
     <!-- Multi-Clipboard Tab -->
@@ -194,6 +221,9 @@
   <script src="features/invoice-validator.js"></script>
   <script src="features/exchange-rate.js"></script>
   <script src="features/depreciation.js"></script>
+  <script src="features/salary-converter.js"></script>
+  <script src="features/cccd-validator.js"></script>
+  <script src="features/date-utils.js"></script>
   
   <!-- Load popup logic -->
   <script src="popup.js"></script>
